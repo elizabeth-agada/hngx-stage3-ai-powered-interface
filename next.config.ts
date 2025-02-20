@@ -1,13 +1,33 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Add this to help with hydration
   experimental: {
-    // This helps with chrome extension related issues
     optimizeCss: true,
-    // This can help with hydration in some cases
     scrollRestoration: true,
+  },
+
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+ 
+  compiler: {
+    styledComponents: true, 
+    removeConsole: process.env.NODE_ENV === "production", 
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com"
+          }
+        ],
+      },
+    ]
   }
 }
 

@@ -1,12 +1,13 @@
+'use client';
 
-'use client'
-
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import { Send, Type, Languages, FileText } from 'lucide-react';
 import { useTextProcessing } from './hooks/useTextProcessing';
 
 export default function ChatPage() {
   const [mounted, setMounted] = useState(false);
+  const [inputText, setInputText] = useState('');
+  const [selectedLang, setSelectedLang] = useState('en');
 
   const {
     outputText,
@@ -20,20 +21,20 @@ export default function ChatPage() {
     isAPIAvailable,
   } = useTextProcessing();
 
-  const [inputText, setInputText] = useState("");
-  const [selectedLang, setSelectedLang] = useState("es");
-
+  
   useEffect(() => {
     setMounted(true);
   }, []);
 
+ 
   const handleSend = async () => {
     if (!inputText.trim()) return;
     setOutputText(inputText);
     await detectLanguage(inputText);
-    setInputText("");
+    setInputText('');
   };
 
+  
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -41,21 +42,23 @@ export default function ChatPage() {
     }
   };
 
+ 
   if (!mounted) {
-    return <div className="min-h-screen bg-[#1A1B1E] text-gray-100">
-      <div className="max-w-4xl mx-auto p-4">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen bg-[#1A1B1E] text-gray-100">
+        <div className="max-w-4xl mx-auto p-4">Loading...</div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#1A1B1E] text-gray-100">
       <div className="max-w-4xl mx-auto p-4">
+  
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#5570F1]">
-            Clone Chat
-          </h1>
+          <h1 className="text-2xl font-bold text-[#5570F1]">Clone Chat</h1>
           <p className="text-center text-gray-400 mt-2">
-            Process, translate, and summarize text
+            Detect, translate, and summarize text
           </p>
           {!isAPIAvailable && (
             <p className="text-center text-yellow-400 mt-2 text-sm">
@@ -64,10 +67,12 @@ export default function ChatPage() {
           )}
         </div>
 
+        
         <div className="bg-[#25262B] rounded-lg shadow-xl mb-4 min-h-[60vh] max-h-[60vh] overflow-y-auto">
           <div className="p-6">
             {outputText ? (
               <div className="space-y-4">
+               
                 <div className="bg-[#2C2D32] p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Type size={16} className="text-[#5570F1]" />
@@ -80,6 +85,7 @@ export default function ChatPage() {
                   </div>
                 </div>
 
+              
                 <div className="flex flex-wrap gap-2">
                   <select
                     value={selectedLang}
@@ -88,21 +94,21 @@ export default function ChatPage() {
                   >
                     <option value="en">English</option>
                     <option value="pt">Portuguese</option>
-                    <option value="es">Spanish</option>
+                    <option value="de">Spanish</option>
                     <option value="ru">Russian</option>
                     <option value="tr">Turkish</option>
                     <option value="fr">French</option>
                   </select>
 
                   <button
-                    onClick={() => translateText(outputText, selectedLang)}
+                    onClick={() => translateText(outputText, language, selectedLang)}
                     className="px-4 py-2 bg-[#5570F1] text-white rounded-lg hover:bg-[#4560E1] transition-colors flex items-center gap-2"
                   >
                     <Languages size={16} />
                     Translate
                   </button>
 
-                  {outputText.length > 150 && language === "en" && (
+                  {outputText.length > 150 && language === 'en' && (
                     <button
                       onClick={() => summarizeText(outputText)}
                       className="px-4 py-2 bg-[#2C2D32] text-white rounded-lg hover:bg-[#34353A] transition-colors flex items-center gap-2"
@@ -113,6 +119,7 @@ export default function ChatPage() {
                   )}
                 </div>
 
+             
                 {(summary || translatedText) && (
                   <div className="space-y-4 mt-4">
                     {translatedText && (
@@ -160,8 +167,8 @@ export default function ChatPage() {
               disabled={!inputText.trim()}
               className={`p-4 rounded-lg flex items-center justify-center ${
                 inputText.trim()
-                  ? "bg-[#5570F1] hover:bg-[#4560E1] text-white"
-                  : "bg-[#2C2D32] text-gray-500"
+                  ? 'bg-[#5570F1] hover:bg-[#4560E1] text-white'
+                  : 'bg-[#2C2D32] text-gray-500'
               } transition-colors`}
             >
               <Send size={20} />
