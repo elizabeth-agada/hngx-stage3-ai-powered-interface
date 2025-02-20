@@ -1,94 +1,101 @@
-"use client";
+import { useState, useCallback, useEffect } from 'react';
 
-import { useState, useEffect } from "react";
 
-const API_TOKEN =
-  "Aoeg49e8gXziww8aMaciOT3ocfAg14TCdd6srBr0/ENCVaog72otR4Or4Qjz9qByZNGl2mbK/pxvft9j0jf8sw0AAABReyJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJmZWF0dXJlIjoiVHJhbnNsYXRpb25BUEkiLCJleHBpcnkiOjE3NTMxNDI0MDB9";
+const detectBrowserLanguage = (text: string): string => {
+  try {
+    
+    if ('Intl' in window && 'Segmenter' in Intl) {
+      const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+      const iterator = segmenter.segment(text);
+      const firstWord = Array.from(iterator)[0];
+      if (firstWord) {
+        return navigator.language || 'en';
+      }
+    }
+    
+    return navigator.language || 'en';
+  } catch (error) {
+    console.error('Language detection error:', error);
+    return 'en';
+  }
+};
 
 export function useTextProcessing() {
   const [outputText, setOutputText] = useState("");
   const [language, setLanguage] = useState("");
   const [summary, setSummary] = useState("");
   const [translatedText, setTranslatedText] = useState("");
-
-  const [detector, setDetector] = useState(null);
-  const [summarizer, setSummarizer] = useState(null);
-  const [translator, setTranslator] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isAPIAvailable, setIsAPIAvailable] = useState(false);
 
   useEffect(() => {
-    async function initializeAPIs() {
+    const checkAPIAvailability = async () => {
       try {
-        
-        const langCapabilities = await self.ai.languageDetector.capabilities();
-        if (langCapabilities.available !== "no") {
-          const newDetector = await self.ai.languageDetector.create();
-          setDetector(newDetector);
-        }
-
-        const summarizerOptions = {
-          sharedContext: "This is a scientific article",
-          type: "key-points",
-          format: "markdown",
-          length: "medium",
-        };
-        const summarizerAvailable = (await self.ai.summarizer.capabilities()).available;
-        if (summarizerAvailable !== "no") {
-          const newSummarizer = await self.ai.summarizer.create(summarizerOptions);
-          setSummarizer(newSummarizer);
-        }
-
        
-        const newTranslator = await self.ai.translator.create({
-          sourceLanguage: "en",
-          targetLanguage: "fr",
-        });
-        setTranslator(newTranslator);
-      } catch (error) {
-        console.error("Error initializing APIs:", error);
-      }
-    }
+        const hasRequiredFeatures = 
+          'Intl' in window && 
+          'Segmenter' in Intl &&
+          'navigator' in window &&
+          'language' in navigator;
 
-    initializeAPIs();
+        setIsAPIAvailable(hasRequiredFeatures);
+      } catch (error) {
+        console.error('API availability check failed:', error);
+        setIsAPIAvailable(false);
+      }
+    };
+
+    checkAPIAvailability();
   }, []);
 
-  const detectLanguage = async (text) => {
-    if (!detector) {
-      console.error("Language Detector not initialized.");
-      return;
+  const detectLanguage = useCallback(async (text: string) => {
+    if (!text.trim()) {
+      setLanguage('');
+      return null;
     }
-    try {
-      const detected = await detector.detect(text);
-      setLanguage(detected.language);
-    } catch (error) {
-      console.error("Error detecting language:", error);
-    }
-  };
 
-  const summarizeText = async (text) => {
-    if (!summarizer) {
-      console.error("Summarizer API not initialized.");
-      return;
-    }
     try {
-      const summaryResult = await summarizer.summarize(text);
-      setSummary(summaryResult);
+      setIsProcessing(true);
+      const detectedLang = detectBrowserLanguage(text);
+      setLanguage(detectedLang);
+      return detectedLang;
     } catch (error) {
-      console.error("Error summarizing text:", error);
+      console.error('Language detection error:', error);
+      setLanguage('unknown');
+      return null;
+    } finally {
+      setIsProcessing(false);
     }
-  };
+  }, []);
 
-  const translateText = async (text, targetLang) => {
-    if (!translator) {
-      console.error("Translator API not initialized.");
-      return;
-    }
+  const summarizeText = useCallback(async (text: string) => {
     try {
-      const translationResult = await translator.translate(text, { targetLanguage: targetLang });
-      setTranslatedText(translationResult);
+      setIsProcessing(true);
+      const words = text.split(' ');
+      const summaryWords = words.slice(0, Math.min(30, words.length));
+      const simpleSummary = summaryWords.join(' ') + (words.length > 30 ? '...' : '');
+      setSummary(simpleSummary);
     } catch (error) {
-      console.error("Error translating text:", error);
+      console.error('Summarization error:', error);
+      setSummary('Error generating summary');
+    } finally {
+      setIsProcessing(false);
     }
-  };
+  }, []);
+
+  const translateText = useCallback(async (text: string, targetLang: string) => {
+    try {
+      setIsProcessing(true);
+      
+      setTranslatedText(`[Translation to ${targetLang}] ${text}`);
+      
+    } catch (error) {
+      console.error('Translation error:', error);
+      setTranslatedText('Error translating text');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, []);
 
   return {
     outputText,
@@ -99,5 +106,7 @@ export function useTextProcessing() {
     summarizeText,
     translatedText,
     translateText,
+    isProcessing,
+    isAPIAvailable,
   };
 }

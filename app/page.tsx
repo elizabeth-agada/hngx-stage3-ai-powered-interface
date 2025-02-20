@@ -1,10 +1,13 @@
-// app/page.tsx
+
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Type, Languages, FileText } from 'lucide-react';
+import { useTextProcessing } from './hooks/useTextProcessing';
 
-export default function ChatInterface() {
+export default function ChatPage() {
+  const [mounted, setMounted] = useState(false);
+
   const {
     outputText,
     setOutputText,
@@ -14,16 +17,21 @@ export default function ChatInterface() {
     summarizeText,
     translatedText,
     translateText,
+    isAPIAvailable,
   } = useTextProcessing();
 
   const [inputText, setInputText] = useState("");
   const [selectedLang, setSelectedLang] = useState("es");
 
-  const handleSend = () => {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleSend = async () => {
     if (!inputText.trim()) return;
     setOutputText(inputText);
-    detectLanguage(inputText);
-    setInputText(""); 
+    await detectLanguage(inputText);
+    setInputText("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -33,6 +41,12 @@ export default function ChatInterface() {
     }
   };
 
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#1A1B1E] text-gray-100">
+      <div className="max-w-4xl mx-auto p-4">Loading...</div>
+    </div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#1A1B1E] text-gray-100">
       <div className="max-w-4xl mx-auto p-4">
@@ -41,8 +55,13 @@ export default function ChatInterface() {
             Clone Chat
           </h1>
           <p className="text-center text-gray-400 mt-2">
-            Process, translate, and summarize text using AI
+            Process, translate, and summarize text
           </p>
+          {!isAPIAvailable && (
+            <p className="text-center text-yellow-400 mt-2 text-sm">
+              Note: Running in limited functionality mode. Some features may not be available.
+            </p>
+          )}
         </div>
 
         <div className="bg-[#25262B] rounded-lg shadow-xl mb-4 min-h-[60vh] max-h-[60vh] overflow-y-auto">
@@ -74,9 +93,9 @@ export default function ChatInterface() {
                     <option value="tr">Turkish</option>
                     <option value="fr">French</option>
                   </select>
-                  
+
                   <button
-                    onClick={() => translateText(selectedLang)}
+                    onClick={() => translateText(outputText, selectedLang)}
                     className="px-4 py-2 bg-[#5570F1] text-white rounded-lg hover:bg-[#4560E1] transition-colors flex items-center gap-2"
                   >
                     <Languages size={16} />
@@ -140,9 +159,9 @@ export default function ChatInterface() {
               onClick={handleSend}
               disabled={!inputText.trim()}
               className={`p-4 rounded-lg flex items-center justify-center ${
-                inputText.trim() 
-                  ? 'bg-[#5570F1] hover:bg-[#4560E1] text-white' 
-                  : 'bg-[#2C2D32] text-gray-500'
+                inputText.trim()
+                  ? "bg-[#5570F1] hover:bg-[#4560E1] text-white"
+                  : "bg-[#2C2D32] text-gray-500"
               } transition-colors`}
             >
               <Send size={20} />
@@ -155,36 +174,4 @@ export default function ChatInterface() {
       </div>
     </div>
   );
-}
-function useTextProcessing() {
-  const [outputText, setOutputText] = useState("");
-  const [language, setLanguage] = useState("");
-  const [summary, setSummary] = useState("");
-  const [translatedText, setTranslatedText] = useState("");
-
-  const detectLanguage = (text: string) => {
-    const detectedLanguage = "en"; 
-    setLanguage(detectedLanguage);
-  };
-
-  const summarizeText = (text: string) => {
-    const summarized = text.split(" ").slice(0, 20).join(" ") + "..."; 
-    setSummary(summarized);
-  };
-
-  const translateText = (targetLang: string) => {
-    const translated = `Translated text to ${targetLang}`;
-    setTranslatedText(translated);
-  };
-
-  return {
-    outputText,
-    setOutputText,
-    language,
-    detectLanguage,
-    summary,
-    summarizeText,
-    translatedText,
-    translateText,
-  };
 }
